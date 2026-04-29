@@ -1,0 +1,16 @@
+{
+  "name": "veriffyi",
+  "version": "1.0.0",
+  "description": "> A modern, high-performance KYC (Know Your Customer) portal built with Rust Yew WASM, designed to deliver seamless identity verification experiences.",
+  "main": "postcss.config.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

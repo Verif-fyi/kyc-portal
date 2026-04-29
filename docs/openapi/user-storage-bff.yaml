@@ -1,0 +1,518 @@
+openapi: 3.1.0
+info:
+  title: KYC Backend BFF Flow API
+  version: 0.2.2
+  description: >
+    BFF-facing v2 flow runtime API. Only flow sessions, flows, steps, user reads, and upload endpoints remain on this surface.
+servers:
+  - url: https://kyc-internal.example.local
+tags:
+  - name: users
+  - name: uploads
+  - name: sessions
+  - name: flows
+  - name: steps
+
+paths:
+  /flow/users/{userId}:
+    get:
+      tags: [ users ]
+      summary: Get user row by id
+      operationId: getFlowUser
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: User row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalUserRecord"
+
+  /flow/users/{userId}/completed-kyc:
+    get:
+      tags: [ users ]
+      summary: Get completed KYC flow markers
+      operationId: getFlowUserCompletedKyc
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Completed KYC markers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompletedKycResponse"
+
+  /uploads/presign:
+    post:
+      tags: [ uploads ]
+      summary: Create presigned upload target
+      operationId: presignUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresignUploadRequest"
+      responses:
+        "200":
+          description: Presigned upload response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignUploadResponse"
+
+  /uploads/complete:
+    post:
+      tags: [ uploads ]
+      summary: Complete upload registration
+      operationId: completeUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteUploadRequest"
+      responses:
+        "200":
+          description: Evidence registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceRef"
+
+  /flow/sessions:
+    get:
+      tags: [ sessions ]
+      summary: List flow sessions for the caller
+      operationId: listFlowSessions
+      responses:
+        "200":
+          description: Sessions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlowSession"
+    post:
+      tags: [ sessions ]
+      summary: Create a top-level flow session
+      operationId: createFlowSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFlowSessionRequest"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowSession"
+
+  /flow/sessions/{sessionId}:
+    get:
+      tags: [ sessions ]
+      summary: Get session with nested flows
+      operationId: getFlowSession
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Session detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowSessionDetail"
+
+  /flow/sessions/{sessionId}/flows:
+    get:
+      tags: [ flows ]
+      summary: List flows for a session
+      operationId: listSessionFlows
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Session flows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlowInstance"
+    post:
+      tags: [ flows ]
+      summary: Add a flow to a session
+      operationId: addFlowToSession
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddFlowRequest"
+      responses:
+        "201":
+          description: Flow created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowInstance"
+
+  /flow/flows/{flowId}:
+    get:
+      tags: [ flows ]
+      summary: Get flow with its steps
+      operationId: getFlow
+      parameters:
+        - $ref: "#/components/parameters/FlowId"
+      responses:
+        "200":
+          description: Flow detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowDetail"
+
+  /flow/flows/{flowId}/steps:
+    get:
+      tags: [ steps ]
+      summary: List steps for a flow
+      operationId: listFlowSteps
+      parameters:
+        - $ref: "#/components/parameters/FlowId"
+      responses:
+        "200":
+          description: Flow steps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlowStep"
+
+  /flow/steps/{stepId}:
+    get:
+      tags: [ steps ]
+      summary: Get flow step details
+      operationId: getFlowStep
+      parameters:
+        - $ref: "#/components/parameters/StepId"
+      responses:
+        "200":
+          description: Step detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowStep"
+    post:
+      tags: [ steps ]
+      summary: Submit user input for a waiting step
+      operationId: submitFlowStep
+      parameters:
+        - $ref: "#/components/parameters/StepId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitFlowStepRequest"
+      responses:
+        "200":
+          description: Step updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowStep"
+
+components:
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 8
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 8
+    FlowId:
+      name: flowId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 8
+    StepId:
+      name: stepId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 8
+
+  schemas:
+    InternalUserRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        userId: { type: string }
+        realm: { type: string }
+        username: { type: string }
+        fullName: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        emailVerified: { type: boolean }
+        phoneNumber: { type: string, nullable: true }
+        disabled: { type: boolean }
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required:
+        - userId
+        - realm
+        - username
+        - emailVerified
+        - disabled
+        - metadata
+        - createdAt
+        - updatedAt
+
+    CompletedKycResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        userId: { type: string }
+        completedKyc:
+          type: object
+          additionalProperties: true
+      required: [ userId, completedKyc ]
+
+    UploadMethod:
+      type: string
+      enum: [ PUT ]
+
+    UploadEncryptionMode:
+      type: string
+      enum: [ SSE_S3, SSE_KMS, SSE_C ]
+
+    PresignUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sessionId: { type: string }
+        stepId: { type: string }
+        userId: { type: string }
+        purpose: { type: string }
+        assetType: { type: string }
+        mime: { type: string }
+        sizeBytes: { type: integer, minimum: 1 }
+        encryption:
+          type: object
+          additionalProperties: false
+          properties:
+            mode:
+              $ref: "#/components/schemas/UploadEncryptionMode"
+          required: [ mode ]
+      required: [ sessionId, stepId, userId, purpose, assetType, mime, sizeBytes ]
+
+    PresignUploadResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        uploadId: { type: string }
+        bucket: { type: string }
+        objectKey: { type: string }
+        method:
+          $ref: "#/components/schemas/UploadMethod"
+        url: { type: string }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        expiresAt: { type: string, format: date-time }
+      required: [ uploadId, bucket, objectKey, method, url, headers, expiresAt ]
+
+    CompleteUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sessionId: { type: string }
+        stepId: { type: string }
+        uploadId: { type: string }
+        bucket: { type: string }
+        objectKey: { type: string }
+        etag: { type: string, nullable: true }
+        computedSha256: { type: string, nullable: true }
+      required: [ sessionId, stepId, uploadId, bucket, objectKey ]
+
+    EvidenceRef:
+      type: object
+      additionalProperties: false
+      properties:
+        evidenceId: { type: string }
+        sessionId: { type: string }
+        stepId: { type: string }
+        assetType: { type: string }
+        sha256: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+      required: [ evidenceId, sessionId, stepId, assetType, createdAt ]
+
+    CreateFlowSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [ sessionType ]
+      properties:
+        sessionType:
+          type: string
+        humanId:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+
+    AddFlowRequest:
+      type: object
+      additionalProperties: false
+      required: [ flowType ]
+      properties:
+        flowType:
+          type: string
+        humanId:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+        initialStep:
+          type: string
+
+    SubmitFlowStepRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        input:
+          type: object
+          additionalProperties: true
+
+    FlowSession:
+      type: object
+      additionalProperties: false
+      required: [ id, humanId, sessionType, status, context, createdAt, updatedAt ]
+      properties:
+        id: { type: string }
+        humanId: { type: string }
+        sessionType: { type: string }
+        status: { type: string }
+        userId:
+          type: string
+          nullable: true
+        context:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FlowInstance:
+      type: object
+      additionalProperties: false
+      required: [ id, humanId, sessionId, flowType, status, stepIds, context, createdAt, updatedAt ]
+      properties:
+        id: { type: string }
+        humanId: { type: string }
+        sessionId: { type: string }
+        flowType: { type: string }
+        status: { type: string }
+        currentStep:
+          type: string
+          nullable: true
+        stepIds:
+          type: array
+          items:
+            type: string
+        context:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FlowStep:
+      type: object
+      additionalProperties: false
+      required: [ id, humanId, flowId, stepType, actor, status, attemptNo, createdAt, updatedAt ]
+      properties:
+        id: { type: string }
+        humanId: { type: string }
+        flowId: { type: string }
+        stepType: { type: string }
+        actor: { type: string }
+        status: { type: string }
+        attemptNo: { type: integer }
+        input:
+          type: object
+          additionalProperties: true
+          nullable: true
+        output:
+          type: object
+          additionalProperties: true
+          nullable: true
+        error:
+          type: object
+          additionalProperties: true
+          nullable: true
+        nextRetryAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    FlowSessionDetail:
+      type: object
+      additionalProperties: false
+      required: [ session, flows ]
+      properties:
+        session:
+          $ref: "#/components/schemas/FlowSession"
+        flows:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowInstance"
+
+    FlowDetail:
+      type: object
+      additionalProperties: false
+      required: [ flow, steps ]
+      properties:
+        flow:
+          $ref: "#/components/schemas/FlowInstance"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowStep"
