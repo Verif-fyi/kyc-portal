@@ -37,9 +37,9 @@ graph TD
     end
 
     UC -->|1. Create session via /bff/sessions| BFF
-    UC -->|2. Add flows via /bff/sessions/{id}/flows| BFF
+    UC -->|2. Add flows via /bff/sessions/:id/flows| BFF
     UC -->|3. Redirect with JWT| UI
-    UI -->|4. Authenticated API Calls (Bearer JWT)| BFF
+    UI -->|4. Authenticated API Calls - Bearer JWT| BFF
     BFF --> FlowSDK
     FlowSDK --> DB
     BFF --> S3
